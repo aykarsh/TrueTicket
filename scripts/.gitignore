@@ -1,0 +1,5 @@
+# Ignore compiled scripts and temp files
+*.pyc
+*.sh~
+.DS_Store
+.env

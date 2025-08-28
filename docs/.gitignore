@@ -1,0 +1,4 @@
+# Ignore generated docs and temp files
+*.html
+*.pdf
+.DS_Store
