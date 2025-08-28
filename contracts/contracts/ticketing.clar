@@ -1,4 +1,4 @@
-;; NFT and Map
+;; NFT and Maps
 (define-non-fungible-token ticket uint)
 (define-map ticket-owners {event-id: uint, ticket-id: uint} principal)
 (define-map ticket-resale-prices {event-id: uint, ticket-id: uint} uint)
