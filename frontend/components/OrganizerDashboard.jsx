@@ -1,14 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { PlusCircle, Ticket } from 'lucide-react';
+import { PlusCircle, Ticket, LogOut, Calendar, FileText, MapPin } from 'lucide-react';
 
 const NAV_ITEMS = [
   { label: "Create Event", id: "create-event" },
-  { label: "Mailroom", id: "mailroom" },
+  { label: "Tickets", id: "mailroom" },
   { label: "Profile", id: "profile" },
 ];
 
 export default function OrganizerDashboard() {
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("create-event");
   const [eventName, setEventName] = useState("");
   const [eventDate, setEventDate] = useState("");
@@ -43,7 +45,6 @@ export default function OrganizerDashboard() {
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
           <div className="flex items-center gap-2 text-xl font-bold text-gray-800">
             <span className="bg-orange-100 rounded px-2 py-1 text-orange-600">TrueTicket</span>
-            <span className="hidden sm:inline">Organizer</span>
           </div>
           <nav className="flex gap-8 relative">
             {NAV_ITEMS.map((item, idx) => (
@@ -63,7 +64,10 @@ export default function OrganizerDashboard() {
               </button>
             ))}
           </nav>
-          <button className="flex items-center gap-1 text-gray-500 hover:text-orange-500 transition">
+          <button
+            className="flex items-center gap-1 text-gray-500 hover:text-orange-500 transition"
+            onClick={() => navigate('/')}
+          >
             <LogOut size={20} />
             <span className="hidden sm:inline text-sm">Logout</span>
           </button>
@@ -72,24 +76,12 @@ export default function OrganizerDashboard() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
-        {/* Greeting and Actions */}
+        {/* Greeting */}
         <section className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-1 flex items-center gap-2">
             Mornin’ Organizer! <span className="text-2xl">👋</span>
           </h2>
-          <p className="text-gray-500 text-lg">Take a look into your company</p>
-          <div className="flex gap-4 mt-6">
-            <div className="flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-lg shadow-sm">
-              <Calendar className="text-orange-500" size={20} />
-              <span className="font-medium text-gray-700">Solve issue with: EIN Order</span>
-              <span className="text-xs text-gray-400 ml-2">2 days ago</span>
-            </div>
-            <div className="flex items-center gap-2 bg-orange-100 px-4 py-2 rounded-lg shadow-sm">
-              <FileText className="text-orange-500" size={20} />
-              <span className="font-medium text-gray-700">File Annual Report</span>
-              <span className="text-xs text-gray-400 ml-2">due in 15 days</span>
-            </div>
-          </div>
+          <p className="text-gray-500 text-lg">Take a look at your Events</p>
         </section>
 
         {/* Create Event Section */}
@@ -164,19 +156,19 @@ export default function OrganizerDashboard() {
           </motion.div>
         </section>
 
-        {/* Mailroom Section */}
+        {/* Tickets Section */}
         <section ref={sectionRefs["mailroom"]} className="mb-12" id="mailroom">
           <div className="bg-white rounded-xl shadow p-6">
             <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
               <MapPin className="text-orange-500" size={20} />
-              Mailroom
+              Tickets
             </h3>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left">
                 <thead>
                   <tr className="text-gray-500 text-sm">
-                    <th className="py-2 px-4">Forwarded from</th>
-                    <th className="py-2 px-4">Message Type</th>
+                    <th className="py-2 px-4">Ticket ID</th>
+                    <th className="py-2 px-4">Ticket name</th>
                     <th className="py-2 px-4">Date</th>
                   </tr>
                 </thead>

@@ -680,13 +680,6 @@ const LandingPage = () => {
               >
                 View Dashboard
               </motion.button>
-              <motion.button
-                className="border-2 border-white/30 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/10 transition-all"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.98 }}
-              >
-                View Documentation
-              </motion.button>
             </div>
           </motion.div>
         </div>
