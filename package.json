@@ -1,0 +1,5 @@
+{
+  "name": "nft-event-ticketing-monorepo",
+  "private": true,
+  "workspaces": ["backend", "frontend"]
+}
