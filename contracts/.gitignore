@@ -1,4 +1,13 @@
-# Ignore build artifacts and local config
-*.clar.out
-*.clar.json
-.env
+
+**/settings/Mainnet.toml
+**/settings/Testnet.toml
+.cache/**
+history.txt
+
+logs
+*.log
+npm-debug.log*
+coverage
+*.info
+costs-reports.json
+node_modules
