@@ -2,9 +2,6 @@
 ;; NFT Ticketing Contract
 ;; ============================
 
-;; ----------------------------
-;; NFT and Maps
-;; ----------------------------
 (define-non-fungible-token ticket uint)
 (define-map ticket-owners {event-id: uint, ticket-id: uint} principal)
 (define-map ticket-resale-prices {event-id: uint, ticket-id: uint} uint)
@@ -50,7 +47,7 @@
 )
 
 ;; ===================================================
-;; ORGAZNIZER FUNCTIONS
+;; ORGANIZER FUNCTIONS
 ;; ===================================================
 
 (define-public (create-event (name (string-ascii 50)) (price uint) (total-tickets uint) (max-resale-percentage uint))
@@ -94,13 +91,19 @@
       )
 
       ;; Mint ticket
-      (let ((ticket-id (+ (get tickets-sold event) u1)))
+      (let (
+        (current-tickets-sold (get tickets-sold event))
+        (ticket-id (+ current-tickets-sold u1))
+      )
+        ;; Mint the NFT ticket
         (unwrap! (nft-mint? ticket ticket-id buyer) (err ERR_NFT_MINT_FAILED))
 
+        ;; Update event information with new tickets-sold count
         (map-set events event-id
-          (merge event {tickets-sold: ticket-id})
+          (merge event {tickets-sold: (+ current-tickets-sold u1)})
         )
 
+        ;; Set initial ownership and price records
         (map-set ticket-owners {event-id: event-id, ticket-id: ticket-id} buyer)
         (map-set ticket-resale-prices {event-id: event-id, ticket-id: ticket-id} (get price event))
 
@@ -120,9 +123,14 @@
       (asserts! (> new-price u0) (err ERR_INVALID_PRICE))
       (asserts! (is-eq tx-sender owner) (err ERR_NOT_TICKET_OWNER))
       (asserts! (not (is-eq new-buyer owner)) (err ERR_INVALID_BUYER))
+      (asserts! (not (is-eq new-buyer (as-contract tx-sender))) (err ERR_INVALID_BUYER))
       (asserts! (<= new-price (+ original-price (/ (* original-price (get max-resale-percentage event)) u100))) (err ERR_EXCEED_MAX_RESALE))
+      
+      ;; First transfer the ticket
+      (unwrap! (do-ticket-transfer event-id ticket-id owner new-buyer new-price) (err ERR_NFT_TRANSFER_FAILED))
+      ;; Then process payment
       (unwrap! (stx-transfer? new-price new-buyer owner) (err ERR_PAYMENT_FAILED))
-      (do-ticket-transfer event-id ticket-id owner new-buyer new-price)
+      (ok ticket-id)
     )
   )
 )
@@ -136,7 +144,12 @@
 )
 
 (define-read-only (get-event (event-id uint))
-  (map-get? events event-id)
+  (if (and 
+       (>= event-id u1)
+       (<= event-id (var-get event-counter)))
+      (map-get? events event-id)
+      none
+  )
 )
 (define-read-only (get-ticket-resale-price (event-id uint) (ticket-id uint))
   (map-get? ticket-resale-prices {event-id: event-id, ticket-id: ticket-id})
