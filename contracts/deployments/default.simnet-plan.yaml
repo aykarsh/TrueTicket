@@ -65,6 +65,6 @@ plan:
         - emulated-contract-publish:
             contract-name: ticketing
             emulated-sender: ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM
-            path: "contracts\\ticketing.clar"
+            path: contracts/ticketing.clar
             clarity-version: 1
-      epoch: "2.05"
+      epoch: "2.1"
