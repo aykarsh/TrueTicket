@@ -1,4 +1,10 @@
+;; ============================
+;; NFT Ticketing Contract
+;; ============================
+
+;; ----------------------------
 ;; NFT and Maps
+;; ----------------------------
 (define-non-fungible-token ticket uint)
 (define-map ticket-owners {event-id: uint, ticket-id: uint} principal)
 (define-map ticket-resale-prices {event-id: uint, ticket-id: uint} uint)
@@ -16,7 +22,9 @@
 
 (define-data-var event-counter uint u0)
 
+;; ----------------------------
 ;; Error Codes
+;; ----------------------------
 (define-constant ERR_SOLD_OUT u100)
 (define-constant ERR_PAYMENT_FAILED u101)
 (define-constant ERR_EVENT_NOT_FOUND u102)
@@ -29,7 +37,9 @@
 (define-constant ERR_NFT_TRANSFER_FAILED u207)
 (define-constant ERR_NFT_MINT_FAILED u208)
 
-;; Private helper for ticket transfer
+;; ----------------------------
+;; Private helper for transfers
+;; ----------------------------
 (define-private (do-ticket-transfer (event-id uint) (ticket-id uint) (owner principal) (new-buyer principal) (new-price uint))
   (begin
     (unwrap! (nft-transfer? ticket ticket-id owner new-buyer) (err ERR_NFT_TRANSFER_FAILED))
@@ -39,7 +49,10 @@
   )
 )
 
-;; Create Event
+;; ===================================================
+;; ORGAZNIZER FUNCTIONS
+;; ===================================================
+
 (define-public (create-event (name (string-ascii 50)) (price uint) (total-tickets uint) (max-resale-percentage uint))
   (begin
     (asserts! (> price u0) (err ERR_INVALID_PRICE))
@@ -62,7 +75,10 @@
   )
 )
 
-;; Buy Ticket
+;; ===================================================
+;; USER FUNCTIONS
+;; ===================================================
+
 (define-public (buy-ticket (event-id uint))
   (let (
         (event (unwrap! (map-get? events event-id) (err ERR_EVENT_NOT_FOUND)))
@@ -94,7 +110,6 @@
   )
 )
 
-;; Resell Ticket
 (define-public (resell-ticket (event-id uint) (ticket-id uint) (new-price uint) (new-buyer principal))
   (let (
     (owner (unwrap! (map-get? ticket-owners {event-id: event-id, ticket-id: ticket-id}) (err ERR_EVENT_NOT_FOUND)))
@@ -112,11 +127,17 @@
   )
 )
 
-;; Read-only
+;; ===================================================
+;; SHARED READ-ONLY FUNCTIONS
+;; ===================================================
+
 (define-read-only (get-ticket-owner (event-id uint) (ticket-id uint))
   (map-get? ticket-owners {event-id: event-id, ticket-id: ticket-id})
 )
 
 (define-read-only (get-event (event-id uint))
   (map-get? events event-id)
+)
+(define-read-only (get-ticket-resale-price (event-id uint) (ticket-id uint))
+  (map-get? ticket-resale-prices {event-id: event-id, ticket-id: ticket-id})
 )
