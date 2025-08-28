@@ -6,8 +6,13 @@
   "private": true,
   "scripts": {
     "test": "vitest run",
-    "test:report": "vitest run -- --coverage --costs",
-    "test:watch": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\""
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:report": "vitest run --coverage --costs",
+    "test:verbose": "vitest run --reporter=verbose",
+    "test:watch-files": "chokidar \"tests/**/*.ts\" \"contracts/**/*.clar\" -c \"npm run test:report\"",
+    "check": "clarinet check",
+    "console": "clarinet console"
   },
   "author": "",
   "license": "ISC",
