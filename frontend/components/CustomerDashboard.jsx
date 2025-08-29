@@ -31,8 +31,14 @@ const NAV_ITEMS = [
 
 const CustomerDashboard = () => {
   const { isSignedIn, loading } = useWallet();
-  const { doOpenAuth } = useConnect();
+  const { doOpenAuth, doContractCall } = useConnect();
   const navigate = useNavigate();
+  
+  // Available Events
+  const [availableEvents, setAvailableEvents] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedEvent, setSelectedEvent] = useState(null);
+  
   // Ticket Purchase
   const [buyEventId, setBuyEventId] = useState('');
   const [buyMsg, setBuyMsg] = useState('');
@@ -47,6 +53,42 @@ const CustomerDashboard = () => {
   // Read-only Queries
   const [queryEventId, setQueryEventId] = useState('');
   const [eventDetails, setEventDetails] = useState(null);
+
+  // Fetch all available events
+  useEffect(() => {
+    const fetchEvents = async () => {
+      try {
+        const events = [];
+        // Fetch up to 100 most recent events
+        for (let i = 1; i <= 100; i++) {
+          try {
+            const result = await fetchCallReadOnlyFunction({
+              contractAddress: CONTRACT_ADDRESS,
+              contractName: CONTRACT_NAME,
+              functionName: 'get-event',
+              functionArgs: [uintCV(i)],
+              network: NETWORK,
+              senderAddress: CONTRACT_ADDRESS,
+            });
+            const event = cvToJSON(result).value;
+            if (event) {
+              events.push({ id: i, ...event });
+            }
+          } catch (error) {
+            // Stop if we hit a non-existent event ID
+            break;
+          }
+        }
+        setAvailableEvents(events);
+      } catch (error) {
+        console.error('Error fetching events:', error);
+      }
+    };
+    
+    if (isSignedIn) {
+      fetchEvents();
+    }
+  }, [isSignedIn]);
   const [queryTicketEventId, setQueryTicketEventId] = useState('');
   const [queryTicketId, setQueryTicketId] = useState('');
   const [ticketOwner, setTicketOwner] = useState(null);
@@ -72,9 +114,7 @@ const CustomerDashboard = () => {
         functionName: 'buy-ticket',
         functionArgs: [uintCV(Number(buyEventId))],
         network: NETWORK,
-        appDetails: { name: 'TrueTicket' },
       };
-      const { doContractCall } = useConnect();
       await doContractCall(txOptions);
       setBuyMsg('Transaction submitted!');
     } catch (err) {
@@ -99,9 +139,7 @@ const CustomerDashboard = () => {
           standardPrincipalCV(resaleNewBuyer)
         ],
         network: NETWORK,
-        appDetails: { name: 'TrueTicket' },
       };
-      const { doContractCall } = useConnect();
       await doContractCall(txOptions);
       setResaleMsg('Transaction submitted!');
     } catch (err) {
