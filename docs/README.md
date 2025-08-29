@@ -1,6 +1,3 @@
-
-<img width="1440" height="813" alt="<img width="179" height="53" alt="Screenshot 2025-08-29 124741" src="https://github.com/user-attachments/assets/36669410-0d33-47c5-8763-6787f4bdcd0a" />
-" src="https://github.com/user-attachments/assets/df95fd67-ccf7-403b-a7f7-d8aee4a6b6e5" />
 ## Project Description
 
 TrueTicket is a decentralized event ticketing system powered by the Stacks blockchain using Clarity smart contracts. It solves real-world ticketing problems, such as fraud, counterfeiting, and high service fees, by leveraging NFT-based tickets, transparency, and direct peer-to-peer payments.
@@ -37,4 +34,6 @@ TrueTicket is a decentralized event ticketing system powered by the Stacks block
 
 ## Tech Stack
 
-**Frontend**: React, Tailwind CSS, Lucide React, Framework Motion, Stacks.js **Backend**: Clarity, Clarinet, Express.js, Stacks Blockchain Othe
+**Frontend**: React, Tailwind CSS, Lucide React, Framework Motion, Stacks.js 
+
+**Backend**: Clarity, Clarinet, Express.js, Stacks Blockchain Othe
