@@ -4,10 +4,23 @@ TrueTicket is a decentralized event ticketing system powered by the Stacks block
 
 ## Key Components
 
-<a href="url"></a>\`\`import { callReadOnlyFunction, openContractCall } from '@stacks/transactions';
 
-// Example: Buy Ticket function const buyTicket = async (eventId) => {
-<img src="" alt=""> const txOptions = { contractAddress, contractName, functionName: 'buy-ticket', functionArgs: \[uintCV(eventId)\], network, senderKey, }; await openContractCall(txOptions); };\`\`
+<p align="center">
+  <img src="../docs/assests/Home page .png" alt="Home Page" width="45%"/>
+  <img src="../docs/assests/About us .png" alt="About Us" width="45%"/>
+</p>
+
+<p align="center">
+  <img src="../docs/assests/Features .png" alt="Features" width="45%"/>
+  <img src="../docs/assests/Connecting to wallet .png" alt="Connecting to Wallet" width="45%"/>
+</p>
+
+<p align="center">
+  <img src="../docs/assests/Customer dashboard .png" alt="Customer Dashboard" width="45%"/>
+  <img src="../docs/assests/Organiser Dashboard .png" alt="Organiser Dashboard" width="45%"/>
+</p>
+
+<video src="../docs/assests/WhatsApp Video 2025-08-29 at 13.29.32" width="600" controls>
 
 ## Key Features
 
