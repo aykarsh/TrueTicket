@@ -1,4 +1,4 @@
-import { AppConfig, UserSession, showConnect } from '@stacks/connect';
+import { AppConfig, UserSession } from '@stacks/connect';
 
 // Configure the app
 export const appConfig = new AppConfig(['store_write', 'publish_data']);
@@ -12,14 +12,6 @@ export const appDetails = {
   icon: '/logo.png', // Make sure to add your logo in the public folder
 };
 
-// Function to handle wallet connection
-export const connectWallet = () => {
-  showConnect({
-    appDetails,
-    onFinish: () => window.location.reload(),
-    userSession,
-  });
-};
 
 // Function to check if user is signed in
 export const isUserSignedIn = () => {

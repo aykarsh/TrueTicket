@@ -1,8 +1,26 @@
 
-import React, { useState, useRef } from 'react';
+
+
+import React, { useState, useRef, useEffect } from 'react';
+import useWallet from '../src/hooks/useWallet';
+import { useConnect } from '@stacks/connect-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Ticket, User, Search, CheckCircle, Repeat2, LogOut } from 'lucide-react';
+import { STACKS_TESTNET } from '@stacks/network';
+import {
+  makeContractCall,
+  bufferCVFromString,
+  uintCV,
+  standardPrincipalCV,
+  cvToJSON
+} from '@stacks/transactions';
+import { fetchCallReadOnlyFunction } from '@stacks/transactions/dist/fetch';
+
+// Set your contract address and name here
+const CONTRACT_ADDRESS = 'ST1GBHM2AE87S825B66NY529PMT18TW2NN39STGAS'; // TODO: Replace with your deployed contract address
+const CONTRACT_NAME = 'ticketing';
+const NETWORK = STACKS_TESTNET;
 
 const NAV_ITEMS = [
   { label: 'Buy Ticket', id: 'buy-ticket' },
@@ -12,6 +30,8 @@ const NAV_ITEMS = [
 ];
 
 const CustomerDashboard = () => {
+  const { isSignedIn, loading } = useWallet();
+  const { doOpenAuth } = useConnect();
   const navigate = useNavigate();
   // Ticket Purchase
   const [buyEventId, setBuyEventId] = useState('');
@@ -39,27 +59,92 @@ const CustomerDashboard = () => {
     'get-owner': useRef(null),
   };
 
-  // Dummy handlers (replace with contract calls)
-  const handleBuyTicket = (e) => {
+
+  // --- Contract-integrated handlers ---
+  const handleBuyTicket = async (e) => {
     e.preventDefault();
+    setBuyMsg('');
     if (!buyEventId) return setBuyMsg('Event ID required');
-    setBuyMsg('Ticket purchased! (simulate contract call)');
+    try {
+      const txOptions = {
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'buy-ticket',
+        functionArgs: [uintCV(Number(buyEventId))],
+        network: NETWORK,
+        appDetails: { name: 'TrueTicket' },
+      };
+      const { doContractCall } = useConnect();
+      await doContractCall(txOptions);
+      setBuyMsg('Transaction submitted!');
+    } catch (err) {
+      setBuyMsg('Error: ' + (err.message || err));
+    }
   };
-  const handleResellTicket = (e) => {
+
+  const handleResellTicket = async (e) => {
     e.preventDefault();
+    setResaleMsg('');
     if (!resaleEventId || !resaleTicketId || !resaleNewPrice || !resaleNewBuyer)
       return setResaleMsg('All fields required');
-    setResaleMsg('Ticket resold! (simulate contract call)');
+    try {
+      const txOptions = {
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'resell-ticket',
+        functionArgs: [
+          uintCV(Number(resaleEventId)),
+          uintCV(Number(resaleTicketId)),
+          uintCV(Number(resaleNewPrice)),
+          standardPrincipalCV(resaleNewBuyer)
+        ],
+        network: NETWORK,
+        appDetails: { name: 'TrueTicket' },
+      };
+      const { doContractCall } = useConnect();
+      await doContractCall(txOptions);
+      setResaleMsg('Transaction submitted!');
+    } catch (err) {
+      setResaleMsg('Error: ' + (err.message || err));
+    }
   };
-  const handleQueryEvent = (e) => {
+
+  const handleQueryEvent = async (e) => {
     e.preventDefault();
-    if (!queryEventId) return setEventDetails(null);
-    setEventDetails({ id: queryEventId, name: 'Sample Event', price: '10', tickets: 100, sold: 5 });
+    setEventDetails(null);
+    if (!queryEventId) return;
+    try {
+      const result = await fetchCallReadOnlyFunction({
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'get-event',
+        functionArgs: [uintCV(Number(queryEventId))],
+        network: NETWORK,
+        senderAddress: CONTRACT_ADDRESS,
+      });
+      setEventDetails(cvToJSON(result).value);
+    } catch (err) {
+      setEventDetails({ error: err.message || err });
+    }
   };
-  const handleQueryTicketOwner = (e) => {
+
+  const handleQueryTicketOwner = async (e) => {
     e.preventDefault();
-    if (!queryTicketEventId || !queryTicketId) return setTicketOwner(null);
-    setTicketOwner('SP123...XYZ (simulate owner)');
+    setTicketOwner(null);
+    if (!queryTicketEventId || !queryTicketId) return;
+    try {
+      const result = await fetchCallReadOnlyFunction({
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'get-ticket-owner',
+        functionArgs: [uintCV(Number(queryTicketEventId)), uintCV(Number(queryTicketId))],
+        network: NETWORK,
+        senderAddress: CONTRACT_ADDRESS,
+      });
+      setTicketOwner(cvToJSON(result).value);
+    } catch (err) {
+      setTicketOwner('Error: ' + (err.message || err));
+    }
   };
 
   const handleNavClick = (id) => {
@@ -67,8 +152,40 @@ const CustomerDashboard = () => {
     sectionRefs[id].current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
+  // Show loading state
+  if (loading) return <div>Loading...</div>;
+
+  // Modal overlay for wallet connect
+  const WalletConnectModal = () => (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center"
+        >
+          <Ticket className="text-blue-500 mb-4" size={40} />
+          <h2 className="text-xl font-bold mb-2 text-gray-800">Connect Your Wallet</h2>
+          <p className="text-gray-500 mb-6 text-center">You must connect your Stacks wallet to access your dashboard.</p>
+          <button
+            className="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded font-semibold shadow"
+            onClick={() => doOpenAuth()}
+          >
+            Connect Wallet
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex flex-col relative">
+      {!isSignedIn && <WalletConnectModal />}
       {/* Navbar */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
@@ -107,7 +224,7 @@ const CustomerDashboard = () => {
       <main className="flex-1 max-w-6xl mx-auto w-full px-4 py-8">
         <section className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-            Mornin’ Customer! <span className="text-2xl">👋</span>
+            Hello There! <span className="text-2xl">👋</span>
           </h2>
           <p className="text-gray-500 text-lg">Welcome to your dashboard</p>
         </section>

@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@stacks/connect-react": "^23.0.12"
+  }
+}

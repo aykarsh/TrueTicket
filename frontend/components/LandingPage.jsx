@@ -273,13 +273,10 @@ const LandingPage = () => {
                     className="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 transition-all"
                     onClick={() => {
                       if (signInEmail === DEMO_ID && signInPassword === DEMO_PASSWORD) {
+                        localStorage.setItem('trueticket_role', signInRole);
                         setShowAuthModal(false);
                         setTimeout(() => {
-                          if (signInRole === 'Organizer') {
-                            navigate('/organizer-dashboard');
-                          } else {
-                            navigate('/customer-dashboard');
-                          }
+                          navigate('/connect-wallet', { state: { role: signInRole } });
                         }, 200);
                       } else {
                         alert('Invalid credentials. Try demo@trueticket.com / demopass123 for demo access.');
@@ -310,13 +307,10 @@ const LandingPage = () => {
                     className="w-full bg-purple-500 text-white py-2 rounded-lg font-semibold hover:bg-purple-600 transition-all"
                     onClick={() => {
                       if (signInEmail === DEMO_ID && signInPassword === DEMO_PASSWORD) {
+                        localStorage.setItem('trueticket_role', signInRole);
                         setShowAuthModal(false);
                         setTimeout(() => {
-                          if (signInRole === 'Organizer') {
-                            navigate('/organizer-dashboard');
-                          } else {
-                            navigate('/customer-dashboard');
-                          }
+                          navigate('/connect-wallet', { state: { role: signInRole } });
                         }, 200);
                       } else {
                         alert('For demo, use demo@trueticket.com / demopass123. (No real sign up logic implemented)');

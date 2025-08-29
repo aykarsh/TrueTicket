@@ -1,7 +1,24 @@
-import React, { useState, useRef } from 'react';
+
+
+import React, { useState, useRef, useEffect } from 'react';
+import useWallet from '../src/hooks/useWallet';
+import { useConnect } from '@stacks/connect-react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { PlusCircle, Ticket, LogOut, Calendar, FileText, MapPin } from 'lucide-react';
+import { STACKS_TESTNET } from '@stacks/network';
+import {
+  makeContractCall,
+  bufferCVFromString,
+  uintCV,
+  cvToJSON
+} from '@stacks/transactions';
+import { fetchCallReadOnlyFunction } from '@stacks/transactions/dist/fetch';
+
+// Set your contract address and name here
+const CONTRACT_ADDRESS = 'ST1GBHM2AE87S825B66NY529PMT18TW2NN39STGAS'; // TODO: Replace with your deployed contract address
+const CONTRACT_NAME = 'ticketing';
+const NETWORK = STACKS_TESTNET;
 
 const NAV_ITEMS = [
   { label: "Create Event", id: "create-event" },
@@ -10,13 +27,17 @@ const NAV_ITEMS = [
 ];
 
 export default function OrganizerDashboard() {
+  const { isSignedIn, loading } = useWallet();
+  const { doOpenAuth, doContractCall } = useConnect();
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("create-event");
   const [eventName, setEventName] = useState("");
-  const [eventDate, setEventDate] = useState("");
-  const [eventLocation, setEventLocation] = useState("");
-  const [eventDescription, setEventDescription] = useState("");
+  const [ticketPrice, setTicketPrice] = useState("");
+  const [totalTickets, setTotalTickets] = useState("");
+  const [maxResale, setMaxResale] = useState("");
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
+  const [myEvents, setMyEvents] = useState([]);
   const sectionRefs = {
     "create-event": useRef(null),
     mailroom: useRef(null),
@@ -28,18 +49,103 @@ export default function OrganizerDashboard() {
     sectionRefs[id].current.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
-  const handleSubmit = (e) => {
+
+  // Create Event handler
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 2000);
-    setEventName("");
-    setEventDate("");
-    setEventLocation("");
-    setEventDescription("");
+    setSuccess(false);
+    setError("");
+    if (!eventName || !ticketPrice || !totalTickets || !maxResale) {
+      setError("All fields required");
+      return;
+    }
+    try {
+      const txOptions = {
+        contractAddress: CONTRACT_ADDRESS,
+        contractName: CONTRACT_NAME,
+        functionName: 'create-event',
+        functionArgs: [
+          bufferCVFromString(eventName),
+          uintCV(Number(ticketPrice)),
+          uintCV(Number(totalTickets)),
+          uintCV(Number(maxResale))
+        ],
+        network: NETWORK
+      };
+      await doContractCall(txOptions);
+      setSuccess(true);
+      setEventName("");
+      setTicketPrice("");
+      setTotalTickets("");
+      setMaxResale("");
+    } catch (err) {
+      setError('Error: ' + (err.message || err));
+    }
   };
 
+  // Fetch events created by this organizer
+  useEffect(() => {
+    const fetchMyEvents = async () => {
+      // For demo: fetch all event IDs up to a max (should use event-counter from contract)
+      const maxEvents = 20;
+      const events = [];
+      for (let i = 1; i <= maxEvents; i++) {
+        try {
+          const result = await fetchCallReadOnlyFunction({
+            contractAddress: CONTRACT_ADDRESS,
+            contractName: CONTRACT_NAME,
+            functionName: 'get-event',
+            functionArgs: [uintCV(i)],
+            network: NETWORK,
+            senderAddress: CONTRACT_ADDRESS,
+          });
+          const event = cvToJSON(result).value;
+          // Only add if organizer matches current user
+          if (event && event.organizer && isSignedIn && event.organizer.value === useWallet().userData.profile.stxAddress.testnet) {
+            events.push({ id: i, ...event });
+          }
+        } catch {}
+      }
+  setMyEvents(events);
+  console.log('Fetched events:', events);
+    };
+    if (isSignedIn) fetchMyEvents();
+  }, [isSignedIn]);
+
+  if (loading) return <div>Loading...</div>;
+
+  // Modal overlay for wallet connect
+  const WalletConnectModal = () => (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-xl shadow-2xl p-8 max-w-sm w-full flex flex-col items-center"
+        >
+          <Ticket className="text-orange-500 mb-4" size={40} />
+          <h2 className="text-xl font-bold mb-2 text-gray-800">Connect Your Wallet</h2>
+          <p className="text-gray-500 mb-6 text-center">You must connect your Stacks wallet to access your dashboard.</p>
+          <button
+            className="bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded font-semibold shadow"
+            onClick={() => doOpenAuth()}
+          >
+            Connect Wallet
+          </button>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 to-white flex flex-col relative">
+      {!isSignedIn && <WalletConnectModal />}
       {/* Navbar */}
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b">
         <div className="max-w-6xl mx-auto flex items-center justify-between px-6 py-4">
@@ -79,80 +185,58 @@ export default function OrganizerDashboard() {
         {/* Greeting */}
         <section className="mb-8">
           <h2 className="text-3xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-            Mornin’ Organizer! <span className="text-2xl">👋</span>
+            Hello There! <span className="text-2xl">👋</span>
           </h2>
           <p className="text-gray-500 text-lg">Take a look at your Events</p>
         </section>
 
-        {/* Create Event Section */}
+        {/* Create Event Section (Modern UI) */}
         <section ref={sectionRefs["create-event"]} className="mb-12" id="create-event">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5 }}
-            className="bg-white rounded-xl shadow-lg p-8"
+            className="p-6 max-w-lg mx-auto bg-white rounded-xl shadow-lg"
           >
-            <h3 className="text-xl font-semibold mb-6 text-gray-700 flex items-center gap-2">
-              <PlusCircle className="text-orange-500" size={24} />
-              Create New Event
-            </h3>
+            <h2 className="text-xl font-bold mb-4">Create Event</h2>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div>
-                <label className="block text-gray-600 mb-1">Event Name</label>
-                <input
-                  type="text"
-                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                  value={eventName}
-                  onChange={(e) => setEventName(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-600 mb-1">Date</label>
-                <input
-                  type="date"
-                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                  value={eventDate}
-                  onChange={(e) => setEventDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-600 mb-1">Location</label>
-                <input
-                  type="text"
-                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                  value={eventLocation}
-                  onChange={(e) => setEventLocation(e.target.value)}
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-600 mb-1">Description</label>
-                <textarea
-                  className="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-300"
-                  value={eventDescription}
-                  onChange={(e) => setEventDescription(e.target.value)}
-                  required
-                />
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.97 }}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold py-2 rounded shadow"
+              <input
+                type="text"
+                placeholder="Event Name"
+                value={eventName}
+                onChange={(e) => setEventName(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Ticket Price (in STX)"
+                value={ticketPrice}
+                onChange={(e) => setTicketPrice(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Total Tickets"
+                value={totalTickets}
+                onChange={(e) => setTotalTickets(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              <input
+                type="number"
+                placeholder="Max Resale %"
+                value={maxResale}
+                onChange={(e) => setMaxResale(e.target.value)}
+                className="w-full border p-2 rounded"
+              />
+              <button
                 type="submit"
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-semibold p-2 rounded shadow"
               >
                 Create Event
-              </motion.button>
-              {success && (
-                <motion.div
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className="text-green-600 text-center mt-2"
-                >
-                  Event created successfully!
-                </motion.div>
-              )}
+              </button>
             </form>
+            {success && <p className="text-green-600 mt-3">✅ Event created successfully!</p>}
+            {error && <p className="text-red-600 mt-3">{error}</p>}
           </motion.div>
         </section>
 
@@ -205,5 +289,6 @@ export default function OrganizerDashboard() {
         </section>
       </main>
     </div>
+    
   );
 }

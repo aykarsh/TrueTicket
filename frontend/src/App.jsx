@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
+import { Connect } from '@stacks/connect-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import useWallet from './hooks/useWallet';
 import WalletConnectButton from './components/WalletConnectButton';
@@ -26,8 +27,10 @@ import {
 } from 'lucide-react';
 import LandingPage from '../components/LandingPage';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+
 import CustomerDashboard from '../components/CustomerDashboard';
 import OrganizerDashboard from '../components/OrganizerDashboard';
+import WalletConnectPage from '../components/WalletConnectPage';
 
 
 const App = () => {
@@ -55,6 +58,7 @@ const App = () => {
           <Routes>
             <Route path="/customer-dashboard" element={<CustomerDashboard />} />
             <Route path="/organizer-dashboard" element={<OrganizerDashboard />} />
+            <Route path="/connect-wallet" element={<WalletConnectPage />} />
             <Route path="/" element={<LandingPage />} />
           </Routes>
         </main>

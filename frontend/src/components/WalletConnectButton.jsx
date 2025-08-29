@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { connectWallet, userSession, signUserOut } from '../utils/auth';
+import { useConnect } from '@stacks/connect-react';
+import { userSession, signUserOut } from '../utils/auth';
 
 const WalletConnectButton = () => {
   const [userData, setUserData] = useState(null);
@@ -14,8 +15,9 @@ const WalletConnectButton = () => {
     }
   }, []);
 
+  const { doOpenAuth } = useConnect();
   const handleConnect = () => {
-    connectWallet();
+    doOpenAuth();
   };
 
   const handleSignOut = () => {
@@ -23,13 +25,18 @@ const WalletConnectButton = () => {
   };
 
   if (userData) {
+    // stxAddress can be a string or an object (mainnet/testnet)
+    let address = '';
+    if (typeof userData.profile.stxAddress === 'string') {
+      address = userData.profile.stxAddress;
+    } else if (typeof userData.profile.stxAddress === 'object' && userData.profile.stxAddress !== null) {
+      // Prefer testnet if available, else mainnet, else first value
+      address = userData.profile.stxAddress.testnet || userData.profile.stxAddress.mainnet || Object.values(userData.profile.stxAddress)[0] || '';
+    }
     return (
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-700">
-          {userData.profile.stxAddress.substring(0, 6)}...
-          {userData.profile.stxAddress.substring(
-            userData.profile.stxAddress.length - 4
-          )}
+          {address ? `${address.substring(0, 6)}...${address.substring(address.length - 4)}` : 'Wallet Connected'}
         </span>
         <button
           onClick={handleSignOut}
